@@ -1,0 +1,65 @@
+---
+title: "Step-wise Regression"
+author: "Zoya Atiq, Jordan Hunter, Laura Montenovo"
+date: "12/12/2019"
+output: pdf_document
+editor_options: 
+  chunk_output_type: console
+---
+```{r packages}
+library(tidyverse)
+library(mlbench)
+```
+
+```{r data}
+data("BostonHousing2")
+bostondf = BostonHousing2 %>% select(-c(medv, cmedv, town, tract))
+bostondf = data.frame(cmedv = BostonHousing2$cmedv, bostondf)
+```
+
+```{r description}
+hist(bostondf$cmedv)
+```
+
+```{r finishing touches}
+
+pvals = data.frame(predictor = NA, pval = NA)
+
+for (i in 2:ncol(bostondf)) {
+  model = lm(cmedv ~ bostondf[, i], data = bostondf)
+  
+  modelsum = summary(model)
+  modelsumdf = as.data.frame(modelsum$coefficients)
+  pvals[i - 1, 2] = modelsumdf$`Pr(>|t|)`[2]
+  pvals[i - 1, 1] = colnames(bostondf[i])
+}
+  
+winner = grep(pvals[which(pvals[, 2] == min(pvals[,2])), 1], names(bostondf))
+winners = data.frame(name = bostondf[winner])
+
+otheroptions = bostondf[, -winner]
+pvals = data.frame(predictor = NA, pval = NA)
+
+  
+for (j in 14:1) {
+
+  for (i in 1:j) {
+  
+  model = lm(bostondf$cmedv ~ . + otheroptions[, i], data = winners)
+  
+  modelsum = summary(model)
+  modelsumdf = as.data.frame(modelsum$coefficients)
+  pvals[i - 1, 2] = modelsumdf$`Pr(>|t|)`[2]
+  pvals[i - 1, 1] = colnames(otheroptions[i])
+ 
+  new_winner = grep(pvals[which(pvals[, 2] == min(pvals[, 2])), 1], names(otheroptions))
+  new_winners = data.frame(name = otheroptions[new_winner])
+  winners = cbind(winners, new_winners)
+  otheroptions = bostondf[, -winners]
+
+  }
+}
+  
+funct = function(formula, otheroptions, winners)
+```
+
